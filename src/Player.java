@@ -5,6 +5,7 @@ public class Player {
     private boolean inGame;
     private double timeToReact;
     private int points;
+    private String choices;
     private int pClientPort;
 
     public Player(String pClientIP,int pClientPort, boolean inGame){
