@@ -11,6 +11,8 @@ public class Player {
     public Player(String pClientIP,int pClientPort, boolean inGame){
         this.pClientIP=pClientIP;
         this.pClientPort=pClientPort;
+        this.inGame=inGame;
+        points=0;
     }
 
     public boolean playerEquals(String pClientIP,int pClientPort){
@@ -22,6 +24,14 @@ public class Player {
 
     public String getName() {
         return name;
+    }
+
+    public String getpClientIP() {
+        return pClientIP;
+    }
+
+    public int getpClientPort() {
+        return pClientPort;
     }
 
     public void setName(String name) {

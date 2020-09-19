@@ -10,6 +10,8 @@ public class SSPServer extends Server {
     public static final int AMOUNT=5;
     private List<Player> playerList;
     private Player[] enemies;
+    private Match[] matches;
+
 
 
     public SSPServer(int pPort) {
@@ -29,7 +31,7 @@ public class SSPServer extends Server {
     @Override
     public void processMessage(String pClientIP, int pClientPort, String pMessage) {
         String[] messageParts = pMessage.split("$");
-        if(messageParts[0].equals("Name")){
+        if(messageParts[0].equals("name")){
             boolean allNames=true;// alle Namen werden als vorhanden angenommen
             playerList.toFirst();
             while(playerList.hasAccess()){
@@ -43,7 +45,24 @@ public class SSPServer extends Server {
                 playerList.next();
             }
             if(amountOfPlayers==AMOUNT && allNames){
-                //Aufgabe des MatchControllers
+                startRound();
+            }
+        } else if(messageParts[0].equals("spiele")){
+            if(matches!=null && matches.length>0){
+                for(int i=0;i<=matches.length;i++){
+                    if(matches[i].contains(pClientIP,pClientPort)){
+                        matches[i].setChoice(pClientIP,pClientPort,messageParts[1]);
+                        if(matches[i].getPlayer1().playerEquals(pClientIP,pClientPort)){
+                            send(pClientIP,pClientPort,"gegner$auswahl$"+matches[i].getChoice2());
+                        }else{
+                            send(pClientIP,pClientPort,"gegner$auswahl$"+matches[i].getChoice1());
+                        }
+                    }
+                }
+                //TODO: Ein Match muss reagieren
+                // sobald es beide ergebnisse kennt und vergleichen wer gewinnt.
+                // Daraufhin gibt es die Ergebnisse weiter
+                // und wertet Punkte aus und bestimmt den weiteren Spielverlauf
             }
         }
 
@@ -55,7 +74,7 @@ public class SSPServer extends Server {
     }
 
     public void askForName(String pClientIP,int pClientPort){
-        send(pClientIP,pClientPort,"sende$Name");
+        send(pClientIP,pClientPort,"sende$name");
     }
 
     public void startRound(){
@@ -74,7 +93,9 @@ public class SSPServer extends Server {
     public void playRounds(){
         roundNumber++;
         int matchNum=0;
-        Match[] matches= new Match[2];
+        matches= new Match[2];
+        //spielentstehung
+        Player restPlayer=null;
         for(int i=0;i<= enemies.length;i++){
             int playerNum=i;
             int enemyNum=2-i+roundNumber;
@@ -86,12 +107,31 @@ public class SSPServer extends Server {
                 Player p1=enemies[playerNum];
                 Player p2=enemies[enemyNum];
                 Match match=new Match(p1,p2);
-                if(matchNum==1 && match.equals(matches[0])){
-                    matches[1]=match;
+                if(matchNum==0 ||
+                        (matchNum==1 && match.matchEquals(matches[0].getPlayer1(),matches[0].getPlayer2()))){
+                    matches[matchNum]=match;
                     matchNum++;
                 }
+            }else{
+                restPlayer=enemies[playerNum];
             }
         }
+        //spielvorgang
+        for(int i=0;i<=matches.length;i++){
+            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
+                    "sende$möglichkeiten");
+            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
+                    "sende$möglichkeiten");
+            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
+                    "gegner$name$"+matches[i].getPlayer2().getName());
+            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
+                    "gegner$name$"+matches[i].getPlayer1().getName());
+        }
+        if(restPlayer!=null) {
+            send(restPlayer.getpClientIP(), restPlayer.getpClientPort(), "status$aussetzen");
+        }
     }
+
+
 
 }
