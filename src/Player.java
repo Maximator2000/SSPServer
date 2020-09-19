@@ -37,4 +37,8 @@ public class Player {
     public void setName(String name) {
         this.name = name;
     }
+
+    public void addPoints(int points){
+        this.points+=points;
+    }
 }

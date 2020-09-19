@@ -2,10 +2,13 @@ public class Match {
 
     private Player player1,player2;
     private String choice1,choice2;
+    private boolean validation1,validation2,winnerKnown;
 
     public Match(Player player1,Player player2) {
         this.player1 = player1;
         this.player2 = player2;
+        validation1=true;
+        validation2=true;
     }
 
     public boolean firstPlayerWins(){
@@ -73,12 +76,24 @@ public class Match {
     public void setChoice(String pClientIp,int pClientPort,String choice){
         if(choice!=null &&(choice.equals("A")||choice.equals("B")||choice.equals("C")
                 ||choice.equals("D")||choice.equals("E"))){
-            if(player1.getpClientIP().equals(pClientIp)&&player1.getpClientPort()==pClientPort){
+            if(player1.getpClientIP().equals(pClientIp)
+                    &&player1.getpClientPort()==pClientPort
+                    &&validation1){
                 choice1=choice;
-            }else if(player2.getpClientIP().equals(pClientIp)&&player2.getpClientPort()==pClientPort){
+                validation1=false;
+            }else if(player2.getpClientIP().equals(pClientIp)
+                    &&player2.getpClientPort()==pClientPort
+                    &&validation2){
                 choice2=choice;
+                validation2=false;
             }
         }
+    }
+    public boolean isFilled(){
+        if(choice1!=null && choice2!=null){
+            return true;
+        }
+        return false;
     }
 
 
@@ -104,5 +119,13 @@ public class Match {
 
     public void setChoice2(String choice2) {
         this.choice2 = choice2;
+    }
+
+    public boolean isWinnerKnown() {
+        return winnerKnown;
+    }
+
+    public void setWinnerKnown(boolean winnerKnown) {
+        this.winnerKnown = winnerKnown;
     }
 }

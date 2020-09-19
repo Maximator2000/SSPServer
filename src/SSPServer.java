@@ -11,13 +11,15 @@ public class SSPServer extends Server {
     private List<Player> playerList;
     private Player[] enemies;
     private Match[] matches;
-
+    private boolean roundIsOver;
+    private int playedGames;
 
 
     public SSPServer(int pPort) {
         super(pPort);
         playerList=new List<>();
         amountOfPlayers=0;
+        roundIsOver=true;
     }
 
     @Override
@@ -52,15 +54,43 @@ public class SSPServer extends Server {
                 for(int i=0;i<=matches.length;i++){
                     if(matches[i].contains(pClientIP,pClientPort)){
                         matches[i].setChoice(pClientIP,pClientPort,messageParts[1]);
-                        if(matches[i].getPlayer1().playerEquals(pClientIP,pClientPort)){
-                            send(pClientIP,pClientPort,"gegner$auswahl$"+matches[i].getChoice2());
-                        }else{
-                            send(pClientIP,pClientPort,"gegner$auswahl$"+matches[i].getChoice1());
+                        if(matches[i].isFilled() && !matches[i].isWinnerKnown()) {
+                            if (matches[i].firstPlayerWins() ) {
+                                matches[i].getPlayer1().addPoints(3);
+                                matches[i].getPlayer2().addPoints(-1);
+                                matches[i].setWinnerKnown(true);
+                                //sende Punktzahl
+                                //TODO sende Punktzahl
+                                //send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),);
+                            }else if(matches[i].getChoice2().equals(matches[i].getChoice1())){
+                                matches[i].getPlayer1().addPoints(1);
+                                matches[i].getPlayer2().addPoints(1);
+                                matches[i].setWinnerKnown(true);
+                                //TODO sende Punktzahl
+
+                            }else {
+                                matches[i].getPlayer1().addPoints(-1);
+                                matches[i].getPlayer2().addPoints(3);
+                                matches[i].setWinnerKnown(true);
+                                //sende Punktzahl
+                                //TODO sende Punktzahl
+                                //send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),);
+                            }
+                            //sende Gegnerwahl
+                            send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
+                                    "gegner$auswahl$" + matches[i].getChoice2());
+                            send(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
+                                    "gegner$auswahl$" + matches[i].getChoice1());
+                            playedGames++;
+                            if(playedGames==matches.length){
+                                //TODO reagiere, falls jeder gespielt hat
+                            }
+
                         }
                     }
                 }
-                //TODO: Ein Match muss reagieren
-                // sobald es beide ergebnisse kennt und vergleichen wer gewinnt.
+
+                //TODO:  Ein Match muss  vergleichen wer gewinnt.
                 // Daraufhin gibt es die Ergebnisse weiter
                 // und wertet Punkte aus und bestimmt den weiteren Spielverlauf
             }
@@ -91,7 +121,9 @@ public class SSPServer extends Server {
     }
 
     public void playRounds(){
+        roundIsOver=false;
         roundNumber++;
+        playedGames=0;
         int matchNum=0;
         matches= new Match[2];
         //spielentstehung
