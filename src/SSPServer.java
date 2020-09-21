@@ -9,6 +9,7 @@ public class SSPServer extends Server {
     private int roundNumber;
     public static final int AMOUNT=5;
     private List<Player> playerList;
+    private List<Player> alternativePlayers;
     private Player[] enemies;
     private Match[] matches;
     private int playedGames;
@@ -19,6 +20,7 @@ public class SSPServer extends Server {
     public SSPServer(int pPort) {
         super(pPort);
         playerList=new List<>();
+        alternativePlayers= new List<>();
         amountOfPlayers=0;
         roundIsOver=true;
         amountOfParticipators=5;
@@ -179,16 +181,22 @@ public class SSPServer extends Server {
         }else{//Jeder hat gegen jeden gespielt.
             //TODO entscheide, ob das Match beendet ist, oder mache ein Sudden Death!
             if(roundIsOver){
-
-            }else{
                 playerList.toFirst();
                 while(playerList.hasAccess()){
-                    //if(playerList.getContent()){
-
-                   // }
-                    send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),
-                            "status$verloren");
+                    if(playerList.getContent().playerEquals(getBestPlayer().getpClientIP(),getBestPlayer().getpClientPort())){
+                        send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),
+                                "status$gewonnen");
+                    }else{
+                        send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),
+                                "status$verloren");
+                    }
+                    playerList.next();
                 }
+                startRound();
+
+            }else{
+
+
             }
         }
     }
@@ -223,10 +231,25 @@ public class SSPServer extends Server {
                     maxPlayer=playerList.getContent();
                 }
             }
+
             return maxPlayer;
         }
         return null;
     }
+
+    public void seperateInAndOutGamePlayers(int points){
+        playerList.toFirst();
+        while(playerList.hasAccess()){
+            if(playerList.getContent().getPoints()==points){
+                playerList.getContent().setInGame(true);
+            }else{
+                playerList.getContent().setInGame(false);
+            }
+            playerList.next();
+        }
+    }
+
+
 
 
 
