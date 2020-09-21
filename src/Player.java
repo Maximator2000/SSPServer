@@ -26,8 +26,16 @@ public class Player {
         return name;
     }
 
+    public int getPoints() {
+        return points;
+    }
+
     public String getpClientIP() {
         return pClientIP;
+    }
+
+    public boolean isInGame() {
+        return inGame;
     }
 
     public int getpClientPort() {
