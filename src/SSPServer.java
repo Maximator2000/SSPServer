@@ -7,7 +7,7 @@ public class SSPServer extends Server {
 
     private int amountOfPlayers;
     private int roundNumber;
-    public static final int AMOUNT=2;
+    public static final int AMOUNT=3;
     private List<Player> playerList;
     private Player[] enemies;
     private Match[] matches;
@@ -21,7 +21,7 @@ public class SSPServer extends Server {
         playerList=new List<>();
         amountOfPlayers=0;
         roundIsOver=true;
-        amountOfParticipators=2;
+        amountOfParticipators=3;
         System.out.println("Server wird erstellt");
 
     }
@@ -58,7 +58,7 @@ public class SSPServer extends Server {
             }
         } else if(messageParts[0].equals("spiele")){
             if(matches!=null && matches.length>0){
-                for(int i=0;i<=matches.length;i++){
+                for(int i=0;i<matches.length;i++){
                     if(matches[i].contains(pClientIP,pClientPort)){
                         matches[i].setChoice(pClientIP,pClientPort,messageParts[1]);
                         System.out.println("Spieler mit Ip und port"+pClientIP+" "+pClientPort+" wählt"+messageParts[1]);
@@ -117,7 +117,17 @@ public class SSPServer extends Server {
 
     @Override
     public void processClosingConnection(String pClientIP, int pClientPort) {
-
+        if(enemies!=null && roundNumber>=enemies.length ){
+            playerList.toFirst();
+            while(playerList.hasAccess()){
+                if(playerList.getContent().playerEquals(pClientIP,pClientPort)){
+                    System.out.println(playerList.getContent().getName()+" hat das Spiel verlassen, weil er die Schönheit des Spieles nicht erkennt");
+                    playerList.remove();
+                }else{
+                    playerList.next();
+                }
+            }
+        }
     }
 
     public void askForName(String pClientIP,int pClientPort){
@@ -146,7 +156,7 @@ public class SSPServer extends Server {
         roundNumber++;
         playedGames=0;
         int matchNum=0;
-        matches= new Match[Math.round((enemies.length-1)/2)];
+        matches= new Match[Math.round((enemies.length)/2)];
         if(roundNumber<enemies.length) {
             //spielentstehung
             Player restPlayer = null;
@@ -172,13 +182,12 @@ public class SSPServer extends Server {
                     }
                 }
             }else if(enemies.length==2){
-                //ToDO
                 matches[0]=new Match(enemies[0],enemies[1]);
             }
 
             //spielvorgang
-            System.out.println(roundIsOver+". Runde -------------------");
-            for (int i = 0; i <= matches.length; i++) {
+            System.out.println((roundNumber+1)+". Runde -------------------");
+            for (int i = 0; i < matches.length; i++) {
                 System.out.println(matches[i].getPlayer1().getName()+" vs. "+matches[i].getPlayer2().getName());
                 send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
                         "sende$möglichkeiten");
@@ -197,7 +206,7 @@ public class SSPServer extends Server {
                 playRounds();
             }
         }else{//Jeder hat gegen jeden gespielt.
-            if(roundIsOver){
+            if(thereIsAWinner()){
                 System.out.println("Runde vorbei : "+getBestPlayer().getName()+ "hat gewonnen");
                 playerList.toFirst();
                 while(playerList.hasAccess()){
@@ -225,7 +234,7 @@ public class SSPServer extends Server {
         }
     }
 
-    public boolean roundIsOver(){
+    public boolean thereIsAWinner(){
         if(playerList!=null && !playerList.isEmpty()){
             int maxPoints=Integer.MIN_VALUE;
             boolean over=true;
