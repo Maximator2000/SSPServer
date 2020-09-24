@@ -1,3 +1,6 @@
+/**
+ * Stellt ein Duell zwischen zwei Spielern dar
+ */
 public class Match {
 
     private Player player1,player2;
@@ -10,6 +13,7 @@ public class Match {
         validation1=true;
         validation2=true;
     }
+
 
     public boolean firstPlayerWins(){
         int c1,c2;
@@ -60,8 +64,14 @@ public class Match {
         return false;
     }
 
+    /**
+     *
+     * @param player1
+     * @param player2
+     * @return Falls die selben Spieler antreten, true
+     */
     public boolean matchEquals(Player player1,Player player2){
-        if(this.player1==player1&&this.player2==player2){
+        if((this.player1==player1&&this.player2==player2)||(this.player1==player2&&this.player2==player1)){
             return true;
         }
         return false;
@@ -73,6 +83,13 @@ public class Match {
         }
         return false;
     }
+
+    /**
+     * sucht den passenden Spierl und setzt die jeweilige Entscheidung.
+     * @param pClientIp
+     * @param pClientPort
+     * @param choice
+     */
     public void setChoice(String pClientIp,int pClientPort,String choice){
         if(choice!=null &&(choice.equals("A")||choice.equals("B")||choice.equals("C")
                 ||choice.equals("D")||choice.equals("E"))){
@@ -89,6 +106,11 @@ public class Match {
             }
         }
     }
+
+    /**
+     *
+     * @return true, falls alle Entscheidungen getroffen wurden
+     */
     public boolean isFilled(){
         if(choice1!=null && choice2!=null){
             return true;

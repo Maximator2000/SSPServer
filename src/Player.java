@@ -1,3 +1,6 @@
+/**
+ * Verwaltet jeden Client
+ */
 public class Player {
 
     private String name;
