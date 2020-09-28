@@ -6,9 +6,7 @@ public class Player {
     private String name;
     private String pClientIP;
     private boolean inGame;
-    private double timeToReact;
     private int points;
-    private String choices;
     private int pClientPort;
 
     public Player(String pClientIP,int pClientPort, boolean inGame){
@@ -20,6 +18,12 @@ public class Player {
 
     public boolean playerEquals(String pClientIP,int pClientPort){
         if(pClientIP.equals(this.pClientIP)&& pClientPort==this.pClientPort){
+            return true;
+        }
+        return false;
+    }
+    public boolean playerEquals(Player other){
+        if(other.getpClientIP().equals(this.pClientIP)&&other.getpClientPort()==this.pClientPort){
             return true;
         }
         return false;
@@ -51,6 +55,10 @@ public class Player {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 
     public void addPoints(int points){

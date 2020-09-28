@@ -57,7 +57,7 @@ public class SSPServer extends Server {
                 }
                 playerList.next();
             }
-            if(amountOfPlayers==AMOUNT){
+            if(amountOfPlayers==AMOUNT && roundIsOver){
                 System.out.println("Erste runde gestartet");
                 startRound();
             }
@@ -134,7 +134,6 @@ public class SSPServer extends Server {
                 if(playerList.getContent().playerEquals(pClientIP,pClientPort)){
                     System.out.println(playerList.getContent().getName()+" hat das Spiel verlassen, weil er die Schönheit des Spieles nicht erkennt");
                     playerList.remove();
-                    amountOfPlayers--;
                 }else{
                     playerList.next();
                 }
@@ -157,9 +156,19 @@ public class SSPServer extends Server {
      */
     public void startRound(){
         roundNumber=-1;
+        if(roundIsOver) {
+            playerList.toFirst();
+            while (playerList.hasAccess()) {//Falls alle mit NAmen mitmachen sollen
+                playerList.getContent().setPoints(0);
+                playerList.next();
+            }
+            seperateInAndOutGamePlayers(0); //teilt die Spieler ein, die mitmachen dürfen
+        }else{//Falls es zum SuddenDeath kommt
+            seperateInAndOutGamePlayers(getBestPlayer(null).getPoints());
+        }
+        //erstelle ein Array mit allen Spielern, die im Spiel partiziieren
         enemies=new Player[amountOfPlayers];
         int i=0;
-        seperateInAndOutGamePlayers(0); //teilt die Spieler ein, die mitmachen dürfen
         playerList.toFirst();
         while(playerList.hasAccess()){
             if(playerList.getContent().isInGame()){
@@ -240,10 +249,10 @@ public class SSPServer extends Server {
             }
         }else{//Jeder hat gegen jeden gespielt.
             if(thereIsAWinner()){
-                System.out.println("Runde vorbei : "+getBestPlayer().getName()+ "hat gewonnen");
+                System.out.println("Runde vorbei : "+getBestPlayer(null).getName()+ "hat gewonnen");
                 playerList.toFirst();
                 while(playerList.hasAccess()){
-                    if(playerList.getContent().playerEquals(getBestPlayer().getpClientIP(),getBestPlayer().getpClientPort())){
+                    if(playerList.getContent().playerEquals(getBestPlayer(playerList.getContent()))){
                         send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),
                                 "status$gewonnen");
                     }else{
@@ -252,16 +261,11 @@ public class SSPServer extends Server {
                     }
                     playerList.next();
                 }
-                playerList.toFirst();
-                while(playerList.hasAccess()){
-                    playerList.getContent().setInGame(true);
-                    playerList.next();
-                }
+                roundIsOver=true;
                 startRound();
 
             }else{
                 System.out.println("Runde vorbei : Es steht noch kein Sieger fest");
-                seperateInAndOutGamePlayers(getBestPlayer().getPoints());
                 startRound();
             }
         }
@@ -308,7 +312,7 @@ public class SSPServer extends Server {
         return true;
     }
 
-    public Player getBestPlayer(){
+    public Player getBestPlayer(Player lastPLayer){
         if(playerList!=null && !playerList.isEmpty()){
             playerList.toFirst();
             Player maxPlayer=playerList.getContent();
@@ -317,17 +321,30 @@ public class SSPServer extends Server {
                     maxPlayer=playerList.getContent();
                 }
             }
+            if(lastPLayer!=null) {
+                playerList.toFirst();
+                boolean goOn = true;
+                while (playerList.hasAccess() && goOn) {
+                    if (playerList.getContent().playerEquals(lastPLayer)) {
+                        goOn = false;
+                    } else {
+                        playerList.next();
+                    }
+                }
+            }
 
             return maxPlayer;
         }
         return null;
     }
-//Spieler, die keinen Namen haben oder nicht die gforderten Punkte haben werden ausgeschlossen
+//Spieler, die keinen Namen haben oder nicht die geforderten Punkte haben werden ausgeschlossen
     public void seperateInAndOutGamePlayers(int points){
         playerList.toFirst();
+        amountOfPlayers=0;
         while(playerList.hasAccess()){
             if(playerList.getContent().getPoints()==points && playerList.getContent().getName()!=null){
                 playerList.getContent().setInGame(true);
+                amountOfPlayers++;
             }else{
                 playerList.getContent().setInGame(false);
             }
