@@ -98,11 +98,14 @@ public class Match {
                     &&validation1){
                 choice1=choice;
                 validation1=false;
+                System.out.println("Die Auswahl von "+player1.getName()+" wurde bestätigt");
             }else if(player2.getpClientIP().equals(pClientIp)
                     &&player2.getpClientPort()==pClientPort
                     &&validation2){
                 choice2=choice;
                 validation2=false;
+                System.out.println("Die Auswahl von "+player2.getName()+" wurde bestätigt");
+
             }
         }
     }
