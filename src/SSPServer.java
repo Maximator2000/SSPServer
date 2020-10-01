@@ -52,7 +52,7 @@ public class SSPServer extends Server {
                     if (playerList.getContent().playerEquals(pClientIP, pClientPort)) {
                         playerList.getContent().setName(messageParts[1]);
                         amountOfPlayers++;//Anzahl der gemeldeten Spieler steigt
-                        System.out.println("Spieler mit IP und Port"+pClientIP+" "+pClientPort+" heißt"+messageParts[1]);
+                        System.out.println("Spieler mit IP und Port"+pClientIP+" "+pClientPort+" heißt "+messageParts[1]);
                     }
                 }
                 playerList.next();
@@ -199,7 +199,7 @@ public class SSPServer extends Server {
             if(enemies.length>2){
                 for (int i = 0; i < enemies.length; i++) {
                     int playerNum = i; // Für jeden Spieler
-                    int enemyNum = 2 - i + roundNumber;//wird ein Gegner ausgewählt
+                    int enemyNum = - i + roundNumber;//wird ein Gegner ausgewählt
                     if (enemyNum < 0) {
                         enemyNum += enemies.length;
                     }
@@ -295,14 +295,11 @@ public class SSPServer extends Server {
      * @return Angabe, ob noch Spiele nötog sind.
      */
     public boolean youNeedToPlay(){
-        int mark=matches.length;
-        if(matches.length%2==0){
-            mark--;
+        int num=enemies.length*((enemies.length-1)/2);
+        if((num/matches.length)<roundNumber-1){
+            return false;
         }
-        if(roundNumber<mark){
-            return true;
-        }
-        return false;
+        return true;
     }
     /**
      *
