@@ -8,12 +8,14 @@ public class Player {
     private boolean inGame;
     private int points;
     private int pClientPort;
+    private boolean cI;
 
     public Player(String pClientIP,int pClientPort, boolean inGame){
         this.pClientIP=pClientIP;
         this.pClientPort=pClientPort;
         this.inGame=inGame;
         points=0;
+        cI=false;
     }
 
     public boolean playerEquals(String pClientIP,int pClientPort){
@@ -63,5 +65,30 @@ public class Player {
 
     public void addPoints(int points){
         this.points+=points;
+    }
+
+    public void setcI(boolean cI) {
+        this.cI = cI;
+    }
+
+    public boolean iscI() {
+        return cI;
+    }
+
+    public String giveRandomChoice(){
+        double r=Math.random();
+        if(r<0.2){
+            return "A";
+        }
+        if(r<0.4){
+            return "B";
+        }
+        if(r<0.6){
+            return "C";
+        }
+        if(r<0.8){
+            return "D";
+        }
+        return "E";
     }
 }

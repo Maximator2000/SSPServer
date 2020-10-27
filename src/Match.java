@@ -83,6 +83,14 @@ public class Match {
         }
         return false;
     }
+    public Player otherPlayer(String pClientIp,int pClientPort){
+        if(player1.getpClientIP().equals(pClientIp)&&player1.getpClientPort()==pClientPort && validation1){
+            return player2;
+        }else if(player2.getpClientIP().equals(pClientIp)&&player2.getpClientPort()==pClientPort && validation2){
+            return player1;
+        }
+        return null;
+    }
 
     /**
      * sucht den passenden Spierl und setzt die jeweilige Entscheidung.
@@ -122,6 +130,7 @@ public class Match {
     }
 
 
+
     public Player getPlayer1() {
         return player1;
     }
@@ -149,6 +158,7 @@ public class Match {
     public boolean isWinnerKnown() {
         return winnerKnown;
     }
+
 
     public void setWinnerKnown(boolean winnerKnown) {
         this.winnerKnown = winnerKnown;

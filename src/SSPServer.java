@@ -3,17 +3,21 @@ import com.sun.xml.internal.bind.v2.TODO;
 import netz.Client;
 import netz.Server;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class SSPServer extends Server {
 
     private int amountOfPlayers;
     private int roundNumber;
-    public static final int AMOUNT=4;
     private List<Player> playerList;
     private Player[] enemies;
     private Match[] matches;
     private int playedGames;
     private boolean roundIsOver;
     private int amountOfParticipators;
+    private Timer timer;
+    private int delay,period,time;
 
     /**
      *
@@ -21,6 +25,10 @@ public class SSPServer extends Server {
      */
     public SSPServer(int pPort) {
         super(pPort);
+        timer=new Timer();
+        delay=1000;
+        period=1000;
+        time=9;
         playerList=new List<>();
         amountOfPlayers=0;
         roundIsOver=true;
@@ -57,68 +65,26 @@ public class SSPServer extends Server {
                 }
                 playerList.next();
             }
-            if(amountOfPlayers==AMOUNT && roundIsOver){
-                System.out.println("-----Ab hier: START------");
-                startRound();
+            if(amountOfPlayers==2){
+                timer.scheduleAtFixedRate(new TimerTask() {
+                    @Override
+                    public void run() {
+                        time--;
+                        if(time==0){
+                            timer.cancel();
+                            if(roundIsOver){
+                                time=9;
+                                System.out.println("-----Ab hier: START------");
+                                startRound();
+                            }
+                        }
+                    }
+                }, delay, period);
             }
         } else if(messageParts[0].equals("spiele")){//falls es sich um Zug handel
             if(matches!=null && matches.length>0){
-                for(int i=0;i<matches.length;i++){ // gehe alle vorhandenen Matches durch
-                    if(matches[i]!=null && matches[i].contains(pClientIP,pClientPort)){
-                        matches[i].setChoice(pClientIP,pClientPort,messageParts[1]);// setze den Zug für den Spieler
-                        System.out.println("Spieler mit Ip und port"+pClientIP+" "+pClientPort+" wählt "+messageParts[1]);
-                        if(matches[i].isFilled() && !matches[i].isWinnerKnown()) {//Falls im Match alle Züge bekannt sind, aber der gewiinner nicht
-                            System.out.println(matches[i].getPlayer1().getName()+" : "+matches[i].getChoice1()+" vs. "
-                                +matches[i].getPlayer2().getName()+" : "+matches[i].getChoice2());
-                            if (matches[i].firstPlayerWins() ) {
-                                matches[i].getPlayer1().addPoints(3);
-                                matches[i].getPlayer2().addPoints(-1);
-                                matches[i].setWinnerKnown(true);
-                                System.out.println(matches[i].getPlayer1().getName()+" wins");
-                                System.out.println(playedGames+" "+enemies.length);
-                                //sende Punktzahl
-                                send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer1().getPoints());
-                                send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer2().getPoints());
-                            }else if(matches[i].getChoice2().equals(matches[i].getChoice1())){ //falls es unentschieden steht
-                                matches[i].getPlayer1().addPoints(1);
-                                matches[i].getPlayer2().addPoints(1);
-                                matches[i].setWinnerKnown(true);
-                                send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer1().getPoints());
-                                send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer2().getPoints());
-                                System.out.println(playedGames+" "+enemies.length);
-
-
-
-                            }else {
-                                matches[i].getPlayer1().addPoints(-1);
-                                matches[i].getPlayer2().addPoints(3);
-                                matches[i].setWinnerKnown(true);
-                                send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer1().getPoints());
-                                send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
-                                        "punkte$"+matches[i].getPlayer2().getPoints());
-                                System.out.println(matches[i].getPlayer2().getName()+" wins");
-                                System.out.println("Spiel : "+playedGames+" Teilnehmer: "+enemies.length+" Spieler");
-
-
-                            }
-                            //sende Gegnerwahl
-                            send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
-                                    "gegner$auswahl$" + matches[i].getChoice2());
-                            send(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
-                                    "gegner$auswahl$" + matches[i].getChoice1());
-                            playedGames++;
-                            if(playedGames==matches.length){
-                                playedGames=0;
-                                playRounds();
-                            }
-
-                        }
-                    }
+                for(Match i : matches){ // gehe alle vorhandenen Matches durch
+                    processRound(pClientIP,pClientPort,i,messageParts[1]);
                 }
 
             }
@@ -126,10 +92,51 @@ public class SSPServer extends Server {
 
     }
 
+    public void processRound(String pClientIP,int pClientPort, Match match,String message){
+        if(match!=null && match.contains(pClientIP,pClientPort)){
+            match.setChoice(pClientIP,pClientPort,message);// setze den Zug für den Spieler
+            System.out.println("Spieler mit Ip und port"+pClientIP+" "+pClientPort+" wählt "+message);
+            if(match.otherPlayer(pClientIP,pClientPort)!=null){
+                send(match.otherPlayer(pClientIP,pClientPort).getpClientIP(),
+                        match.otherPlayer(pClientIP,pClientPort).getpClientPort(),
+                        "gegner$auswahl$"+message);
+            }
+            if(match.isFilled() && !match.isWinnerKnown()) {//Falls im Match alle Züge bekannt sind, aber der gewiinner nicht
+                System.out.println(match.getPlayer1().getName()+" : "+match.getChoice1()+" vs. "
+                        +match.getPlayer2().getName()+" : "+match.getChoice2());
+                if (match.firstPlayerWins() ) {
+                    match.getPlayer1().addPoints(3);
+                    match.getPlayer2().addPoints(-1);
+                    match.setWinnerKnown(true);
+                    System.out.println(match.getPlayer1().getName()+" wins");
+                    System.out.println(playedGames+" "+enemies.length);
+                }else if(match.getChoice2().equals(match.getChoice1())){ //falls es unentschieden steht
+                    match.getPlayer1().addPoints(1);
+                    match.getPlayer2().addPoints(1);
+                    match.setWinnerKnown(true);
+                }else {
+                    match.getPlayer1().addPoints(-1);
+                    match.getPlayer2().addPoints(3);
+                    match.setWinnerKnown(true);
+                    System.out.println(match.getPlayer2().getName()+" wins");
+                    System.out.println("Spiel : "+playedGames+" Teilnehmer: "+enemies.length+" Spieler");
+                }
+                //sende Gegnerwahl
+
+                playedGames++;
+                if(playedGames==matches.length){
+                    playedGames=0;
+                    playRounds();
+                }
+
+            }
+        }
+    }
+
     @Override
     public void processClosingConnection(String pClientIP, int pClientPort) {
         //Verbindung zu den Client ist schon weg
-        if(isConnectedTo(pClientIP,pClientPort)){
+        /*if(!isConnectedTo(pClientIP,pClientPort)){
             //Löscht spieler aus der Liste und zeigt anschließend auf das Objekt, aif welches vorher gezeigt wurde
             if(!playerList.isEmpty()){
                 Player lastOne=playerList.getContent();
@@ -144,7 +151,7 @@ public class SSPServer extends Server {
                 }
                 playerList.toFirst();
                 if(lastOne!=null){
-                    while (playerList.hasAccess() || playerList.getContent().playerEquals(lastOne)){
+                    while (playerList.hasAccess() && !playerList.getContent().playerEquals(lastOne)){
                         playerList.next();
                     }
                 }
@@ -165,7 +172,26 @@ public class SSPServer extends Server {
                 sendToAll("status$neustart");
             }
 
+        }*/
+        if(!playerList.isEmpty()) {
+            Player lastOne = playerList.getContent();
+            playerList.toFirst();
+            while (playerList.hasAccess()) {
+                if (playerList.getContent().playerEquals(pClientIP, pClientPort)) {
+                    playerList.getContent().setcI(true);
+
+                }
+                playerList.next();
+            }
+            playerList.toFirst();
+            if (lastOne != null) {
+                while (playerList.hasAccess() && !playerList.getContent().playerEquals(lastOne)) {
+                    playerList.next();
+                }
+            }
         }
+
+
     }
 
     /**
@@ -193,6 +219,8 @@ public class SSPServer extends Server {
         }else{//Falls es zum SuddenDeath kommt
             seperateInAndOutGamePlayers(getBestPlayer(null).getPoints());
         }
+        //alle Spieler in playerList sollten jetzt mitmachen
+        uebergebeZwischenstand();
         //erstelle ein Array mit allen Spielern, die im Spiel partiziieren
         enemies=new Player[amountOfPlayers];
         int i=0;
@@ -262,8 +290,45 @@ public class SSPServer extends Server {
             }else if(enemies.length==2){
                 matches[0]=new Match(enemies[0],enemies[1]);
             }
-
+            for(Player player: enemies){
+                if(player.iscI()){
+                    for(Match match:matches){
+                        if(match.contains(player.getpClientIP(),player.getpClientPort())){
+                            processRound(player.getpClientIP(),player.getpClientPort(),match,player.giveRandomChoice());
+                        }
+                    }
+                }
+            }
             //spielvorgang
+            timer=new Timer();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    sendToAll("zeit$"+(time));
+                    time--;
+                    System.out.println("zeit$"+(time+1));
+                    if(time==0){
+                        time=19;
+                        System.out.println("Zeit um");
+                        timer.cancel();
+                        for(int i=0;i<matches.length;i++){
+                            if(!matches[i].isFilled()){
+                                if(matches[i].getChoice1()==null){
+                                    closeConnection(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort());
+                                    processRound(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),
+                                            matches[i],matches[i].getPlayer1().giveRandomChoice());
+                                }
+                                if(matches[i].getChoice2()==null){
+                                    closeConnection(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort());
+                                    processRound(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),
+                                            matches[i],matches[i].getPlayer2().giveRandomChoice());
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }, delay, period);
             System.out.println((roundNumber+1)+". Runde -------------------");
             for (int i = 0; i < matches.length; i++) {
                 System.out.println(matches[i]);
@@ -271,13 +336,14 @@ public class SSPServer extends Server {
                 System.out.println(matches[i].getPlayer1().getName());
                System.out.println(matches[i].getPlayer1().getName()+" vs. "+matches[i].getPlayer2().getName());
                 send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
-                        "sende$möglichkeiten");
-                send(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
-                        "sende$möglichkeiten");
-                send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
                         "gegner$name$" + matches[i].getPlayer2().getName());
                 send(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
                         "gegner$name$" + matches[i].getPlayer1().getName());
+                send(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
+                        "sende$möglichkeiten");
+                send(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
+                        "sende$möglichkeiten");
+
             }
             if (restPlayer != null) {
                 System.out.println(restPlayer.getName()+" setzt aus .(");
@@ -285,9 +351,11 @@ public class SSPServer extends Server {
             }
             if(matches.length==0){
                 playRounds();
+
             }
         }else{//Jeder hat gegen jeden gespielt.
             System.out.println("------ENDE------"+thereIsAWinner());
+            uebergebeZwischenstand();
             if(thereIsAWinner()){
                 System.out.println("Runde vorbei : "+getBestPlayer(null).getName()+ "hat gewonnen");
                 playerList.toFirst();
@@ -310,7 +378,17 @@ public class SSPServer extends Server {
             }
         }
     }
+    public void uebergebeZwischenstand(){
+        String nachricht="punkte";
+        playerList.toFirst();
+        while (playerList.hasAccess()){
+            nachricht+="$"+playerList.getContent().getName()+"$"+playerList.getContent().getPoints();
+            playerList.next();
+        }
+        System.out.println("An alle wird gesendet : "+nachricht);
+        sendToAll(nachricht);
 
+    }
     /**
      *
      * @param match
@@ -327,6 +405,7 @@ public class SSPServer extends Server {
         }
         return true;
     }*/
+
     public boolean matchDieRichitgenSpielerBeansprucht(Match match){
         for( int i=0;i<matches.length;i++){
             if(matches[i]!=null) {
@@ -366,7 +445,7 @@ public class SSPServer extends Server {
             boolean over=true;
             playerList.toFirst();
             while(playerList.hasAccess()){
-                if(playerList.getContent().isInGame()){// falls der Spieler am Spiel beteildigt ist
+                if(playerList.getContent().isInGame() && !playerList.getContent().iscI()){// falls der Spieler am Spiel beteildigt ist
                     if(playerList.getContent().getPoints()>maxPoints){// Falls es eine neue maximale Punktzahl gibt --> rückgabewert wird true
                         maxPoints=playerList.getContent().getPoints();
                         over=true;
@@ -387,7 +466,7 @@ public class SSPServer extends Server {
             playerList.toFirst();
             Player maxPlayer=playerList.getContent();
             while(playerList.hasAccess()){
-                if(playerList.getContent().getPoints()>maxPlayer.getPoints()){
+                if(playerList.getContent().getPoints()>maxPlayer.getPoints() && !playerList.getContent().iscI()){
                     maxPlayer=playerList.getContent();
                 }
                 playerList.next();
@@ -415,12 +494,20 @@ public class SSPServer extends Server {
         while(playerList.hasAccess()){
             if(playerList.getContent().getName()!=null) {
                 if (playerList.getContent().getPoints() == points) {
-                    playerList.getContent().setInGame(true);
-                    amountOfPlayers++;
+                    if(playerList.getContent().iscI()){
+                        System.out.println(playerList.getContent().getName()+" wurde bseitigt, da er seinen eigenen Charackter nicht steuern konnte ...\n selbs die KI kann es besser");
+                        playerList.remove();
+                    }else{
+                        playerList.getContent().setInGame(true);
+                        amountOfPlayers++;
+                        playerList.next();
+                    }
+
                 } else {
                     playerList.getContent().setInGame(false);
+                    playerList.next();
                 }
-                playerList.next();
+
             }else{
                 send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen");
 
