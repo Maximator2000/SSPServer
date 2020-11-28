@@ -31,7 +31,7 @@ public class Connection
     private PrintWriter toServer;
 
     public Connection(String pServerIP, int pServerPort)
-    {       
+    {
         try
         {
             socket = new Socket(pServerIP, pServerPort);

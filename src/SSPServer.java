@@ -70,6 +70,7 @@ public class SSPServer extends Server {
                 timer.scheduleAtFixedRate(new TimerTask() {
                     @Override
                     public void run() {
+                        sendToAll("zeit$"+(time));
                         time--;
                         System.out.println("Bis start "+time);
                         if(time==0){
@@ -210,6 +211,7 @@ public class SSPServer extends Server {
         roundNumber++;
         playedGames=0;
         int matchNum=0;
+        time=20;
         matches= new Match[Math.round((enemies.length)/2)];//Die Anzahl der MAtches wird festgelegt.
         // Bei ungerader Anzahl wird abgerundet
         if(youNeedToPlay()) {//solange es noch Spiele gibt
@@ -313,9 +315,9 @@ public class SSPServer extends Server {
                             processRound(player.getpClientIP(), player.getpClientPort(), match, player.giveRandomChoice());
                         }else{
                             send(player.getpClientIP(), player.getpClientPort(),
-                                    "gegner$name$" + match.otherPlayer(player.getpClientIP(),player.getpClientPort()));
+                                    "gegner$name$" + match.otherPlayer(player.getpClientIP(),player.getpClientPort()).getName());
                             send(player.getpClientIP(), player.getpClientPort(),
-                                    "sende$möglichkeiten");
+                                    "sende$auswahl");
                         }
                     }
 
