@@ -9,13 +9,14 @@ import java.util.TimerTask;
 public class SSPServer extends Server {
 
     private int amountOfPlayers;
+    private int sizeOfMatch;
     private int roundNumber;
     private List<Player> playerList;
+    private List <Player> waitingPlayers;
     private Player[] enemies;
     private Match[] matches;
     private int playedGames;
     private boolean roundIsOver;
-    private int amountOfParticipators;
     private Timer timer;
     private int delay,period,time;
 
@@ -30,6 +31,7 @@ public class SSPServer extends Server {
         period=1000;
         time=10;
         playerList=new List<>();
+        waitingPlayers=new List<>();
         amountOfPlayers=0;
         roundIsOver=true;
         //amountOfParticipators=4;
@@ -44,9 +46,15 @@ public class SSPServer extends Server {
      */
     @Override
     public void processNewConnection(String pClientIP, int pClientPort) {
-        playerList.append(new Player(pClientIP,pClientPort,true));
-        askForName(pClientIP,pClientPort);
-        System.out.println("Mit Server verbundnen "+pClientIP+" "+pClientPort);
+        if(roundIsOver) {
+            playerList.append(new Player(pClientIP, pClientPort, true));
+            askForName(pClientIP, pClientPort);
+            System.out.println("Mit Server verbundnen " + pClientIP + " " + pClientPort);
+        }else{
+            waitingPlayers.append(new Player(pClientIP, pClientPort, true));
+            askForName(pClientIP, pClientPort);
+            System.out.println("Mit Server verbundnen " + pClientIP + " " + pClientPort);
+        }
 
     }
 
@@ -54,6 +62,7 @@ public class SSPServer extends Server {
     public void processMessage(String pClientIP, int pClientPort, String pMessage) {
         String[] messageParts = pMessage.split("\\$");
         if(messageParts[0].equals("name")){ //falls der Name übergeben wird
+            boolean gefunden=false;
             playerList.toFirst();
             while(playerList.hasAccess()){// gehe alle Spieler durch
                 if(playerList.getContent().getName()==null) { // falls der NAme noch nicht festesteht
@@ -61,11 +70,23 @@ public class SSPServer extends Server {
                         playerList.getContent().setName(messageParts[1]);
                         amountOfPlayers++;//Anzahl der gemeldeten Spieler steigt
                         System.out.println("Spieler mit IP und Port"+pClientIP+" "+pClientPort+" heißt "+messageParts[1]);
+                        gefunden=true;
                     }
                 }
                 playerList.next();
             }
-            if(amountOfPlayers==2){
+            if(gefunden){
+                waitingPlayers.toFirst();
+                while(waitingPlayers.hasAccess()){
+                    if(waitingPlayers.getContent().getName()==null) { // falls der NAme noch nicht festesteht
+                        if (waitingPlayers.getContent().playerEquals(pClientIP, pClientPort)) {
+                            waitingPlayers.getContent().setName(messageParts[1]);
+                            System.out.println("Spieler mit IP und Port"+pClientIP+" "+pClientPort+" heißt "+messageParts[1]);
+                        }
+                    }
+                }
+            }
+            if(amountOfPlayers==2 && roundIsOver){
                 timer=new Timer();
                 timer.scheduleAtFixedRate(new TimerTask() {
                     @Override
@@ -75,11 +96,10 @@ public class SSPServer extends Server {
                         System.out.println("Bis start "+time);
                         if(time==0){
                             timer.cancel();
-                            if(roundIsOver){
-                                time=40;
-                                System.out.println("-----Ab hier: START------");
-                                startRound();
-                            }
+                            timer.purge();
+                            time=40;
+                            System.out.println("-----Ab hier: START------");
+                            startRound();
                         }
                     }
                 }, delay, period);
@@ -157,16 +177,21 @@ public class SSPServer extends Server {
 
                 playedGames++;
                 if(playedGames==matches.length){
+                    timer.cancel();
+                    timer.purge();
                     playedGames=0;
                     Timer interval= new Timer();
                     time=5;
                     interval.scheduleAtFixedRate(new TimerTask() {
                         @Override
                         public void run() {
+                            System.out.println("zeit bis ende pause"+time);
+                            sendToAll("zeit$"+time);
                             time--;
                             if(time==0){
                                 time=30;
                                 System.out.println("");
+                                uebergebeZwischenstand();
                                 playRounds();
                                 interval.cancel();
                                 interval.purge();
@@ -214,6 +239,12 @@ public class SSPServer extends Server {
      * startet ein Turnier und setzt alle WERTE
      */
     public void startRound(){
+        if(roundIsOver) {
+            waitingPlayers.toFirst();
+            while (waitingPlayers.hasAccess()) {
+                playerList.append(waitingPlayers.getContent());
+            }
+        }
         roundNumber=-1;
         if(roundIsOver) {
             seperateInAndOutGamePlayers(0); //teilt die Spieler ein, die mitmachen dürfen
@@ -306,7 +337,6 @@ public class SSPServer extends Server {
                         System.out.println("Zeit um");
                         timer.cancel();
                         timer.purge();
-                        uebergebeZwischenstand();
                         for(int i=0;i<matches.length;i++){
                             if(matches[i]!=null) {
                                 if (!matches[i].isFilled()) {
@@ -384,7 +414,6 @@ public class SSPServer extends Server {
                     playerList.next();
                 }
                 roundIsOver=true;
-                startRound();
                 processEnd();
 
             }else{
@@ -395,6 +424,8 @@ public class SSPServer extends Server {
     }
 
     public void processEnd(){
+        timer.purge();
+        timer.cancel();
         sendToAll("sende$weiterMachen");
         playerList.toFirst();
         while (playerList.hasAccess()){
@@ -424,14 +455,46 @@ public class SSPServer extends Server {
             }
         },delay,period);
     }
-
+//17.130.45 Joshuas PC
     public void uebergebeZwischenstand(){
+        int size;
+        if(enemies==null){
+            size=amountOfPlayers;
+        }else{
+            if(enemies.length%2==0){
+                size= enemies.length;
+            }else{
+                size=enemies.length-1;
+            }
+        }
         String nachricht="punkte";
         playerList.toFirst();
-        Player[] sortedPlayers= new Player[amountOfPlayers];
-        while(playerList.hasAccess()) {
-            if(playerList.getContent().isInGame() && playerList.getContent()!=null) {
-                boolean weiter = true;
+        Player[] sortedPlayers= new Player[size];
+
+        List <Player> tmp=playerList;
+        for(int i=0;i<size;i++) {
+            int max=-1;
+            Player maxPlayer=null;
+            while (tmp.hasAccess()) {
+                if (tmp.getContent() != null) {
+                    if (tmp.getContent().getPoints() > max) {
+                        maxPlayer = tmp.getContent();
+                        max = tmp.getContent().getPoints();
+                    }
+                }
+            }
+            while (tmp.hasAccess()) {
+                if (tmp.getContent() != null) {
+                    if (tmp.getContent().playerEquals(maxPlayer)) {
+                        tmp.remove();
+                    }else{
+                        tmp.next();
+                    }
+                }
+            }
+            sortedPlayers[i]=maxPlayer;
+        }
+                /*boolean weiter = true;
                 for (int i = 0; i < sortedPlayers.length && weiter; i++) {
                     if (sortedPlayers[i] == null || sortedPlayers[i].getPoints() < playerList.getContent().getPoints()) {
                         sortedPlayers[i] = playerList.getContent();
@@ -440,7 +503,7 @@ public class SSPServer extends Server {
                 }
             }
             playerList.next();
-        }
+        }*/
         for(Player p:sortedPlayers){
             System.out.println(p);
             if(p!=null) {
