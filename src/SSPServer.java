@@ -455,23 +455,38 @@ public class SSPServer extends Server {
             }
         },delay,period);
     }
-//17.130.45 Joshuas PC
+//10.17.130.45 Joshuas PC
     public void uebergebeZwischenstand(){
         int size;
         if(enemies==null){
             size=amountOfPlayers;
         }else{
-            if(enemies.length%2==0){
-                size= enemies.length;
-            }else{
-                size=enemies.length-1;
-            }
+            size=enemies.length-1;
+
         }
         String nachricht="punkte";
         playerList.toFirst();
         Player[] sortedPlayers= new Player[size];
+        playerList.toFirst();
+        for(int i=0;i<size;i++){
+            if(playerList.getContent()!=null){
+               sortedPlayers[i]=playerList.getContent();
+               playerList.next();
+            }
+        }
+        for(int i=0;i<sortedPlayers.length-1;i++){
+            int index=i;
+            for(int j=i+1;j<sortedPlayers.length;j++){
+                if(sortedPlayers[j].getPoints()>sortedPlayers[index].getPoints()){
+                    index=j;
+                }
+            }
+            Player tmp=sortedPlayers[index];
+            sortedPlayers[index]=sortedPlayers[i];
+            sortedPlayers[i]=tmp;
+        }
 
-        List <Player> tmp=playerList;
+        /*List <Player> tmp=playerList;
         for(int i=0;i<size;i++) {
             int max=-1;
             Player maxPlayer=null;
