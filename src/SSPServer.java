@@ -29,7 +29,7 @@ public class SSPServer extends Server {
         timer=new Timer();
         delay=1000;
         period=1000;
-        time=10;
+        time=20;
         playerList=new List<>();
         waitingPlayers=new List<>();
         amountOfPlayers=0;
@@ -117,6 +117,7 @@ public class SSPServer extends Server {
                 playerList.toFirst();
                 while (playerList.hasAccess() && suche){
                     if(playerList.getContent().playerEquals(pClientIP,pClientPort)){
+                        System.out.println(playerList.getContent().getName()+" spielt weiter");
                         playerList.getContent().setPoints(0);
                         playerList.getContent().setInGame(true);
                         suche=false;
@@ -130,6 +131,7 @@ public class SSPServer extends Server {
                     if(playerList.getContent().playerEquals(pClientIP,pClientPort)){
                         suche=false;
                         playerList.remove();
+                        System.out.println(playerList.getContent().getName()+" macht Schluss");
                     }
                     playerList.next();
                 }
@@ -142,11 +144,8 @@ public class SSPServer extends Server {
         if(match!=null && match.contains(pClientIP,pClientPort)){
             match.setChoice(pClientIP,pClientPort,message);// setze den Zug für den Spieler
             System.out.println("Spieler mit Ip und port"+pClientIP+" "+pClientPort+" wählt "+message);
-            if(match.otherPlayer(pClientIP,pClientPort)!=null){
-                send(match.otherPlayer(pClientIP,pClientPort).getpClientIP(),
-                        match.otherPlayer(pClientIP,pClientPort).getpClientPort(),
-                        "gegner$auswahl$"+message);
-            }
+            Player p= match.otherPlayer(pClientIP,pClientPort);
+            //send(p.getpClientIP(),p.getpClientPort(),"gegner$name$")
             if(match.isFilled() && !match.isWinnerKnown()) {//Falls im Match alle Züge bekannt sind, aber der gewiinner nicht
                 System.out.println(match.getPlayer1().getName()+" : "+match.getChoice1()+" vs. "
                         +match.getPlayer2().getName()+" : "+match.getChoice2());
@@ -154,6 +153,8 @@ public class SSPServer extends Server {
                     match.getPlayer1().addPoints(3);
                     match.getPlayer2().addPoints(-1);
                     match.setWinnerKnown(true);
+                    send(match.getPlayer1().getpClientIP(),match.getPlayer1().getpClientPort(),"gegner$auswahl$"+match.getChoice2());
+                    send(match.getPlayer1().getpClientIP(),match.getPlayer1().getpClientPort(),"gegner$auswahl$"+match.getChoice1());
                     send(match.getPlayer1().getpClientIP(),match.getPlayer1().getpClientPort(),"status$ausgang$gewonnen");
                     send(match.getPlayer2().getpClientIP(),match.getPlayer2().getpClientPort(),"status$ausgang$verloren");
                     System.out.println(match.getPlayer1().getName()+" wins");
@@ -173,7 +174,6 @@ public class SSPServer extends Server {
                     System.out.println(match.getPlayer2().getName()+" wins");
                     System.out.println("Spiel : "+playedGames+" Teilnehmer: "+enemies.length+" Spieler");
                 }
-                //sende Gegnerwahl
 
                 playedGames++;
                 if(playedGames==matches.length){
@@ -342,7 +342,7 @@ public class SSPServer extends Server {
                                 if (!matches[i].isFilled()) {
                                     if (matches[i].getChoice1() == null) {
                                         if(isConnectedTo(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort())){
-                                            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet !");
+                                            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Feigling");
                                         }
                                         closeConnection(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort());
                                         processRound(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
@@ -350,7 +350,7 @@ public class SSPServer extends Server {
                                     }
                                     if (matches[i].getChoice2() == null) {
                                         if(isConnectedTo(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort())){
-                                            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet !");
+                                            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Feiging");
                                         }
                                         closeConnection(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort());
                                         processRound(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
@@ -437,6 +437,7 @@ public class SSPServer extends Server {
         tBreak.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                System.out.println(time);
                 time--;
                 if(time==0){
                     startRound();
@@ -444,6 +445,7 @@ public class SSPServer extends Server {
                     playerList.toFirst();
                     while (playerList.hasAccess()){
                         if(!playerList.getContent().isInGame()){
+                            send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen$Du hast vergessen, dich höflich zu verabschieden!");
                             playerList.remove();
                         }else {
                             playerList.next();
@@ -461,7 +463,7 @@ public class SSPServer extends Server {
         if(enemies==null){
             size=amountOfPlayers;
         }else{
-            size=enemies.length-1;
+            size=enemies.length;
 
         }
         String nachricht="punkte";
