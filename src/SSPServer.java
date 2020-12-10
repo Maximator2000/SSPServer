@@ -342,7 +342,7 @@ public class SSPServer extends Server {
                                 if (!matches[i].isFilled()) {
                                     if (matches[i].getChoice1() == null) {
                                         if(isConnectedTo(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort())){
-                                            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Feigling");
+                                            send(matches[i].getPlayer1().getpClientIP(),matches[i].getPlayer1().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Flitzpiepe");
                                         }
                                         closeConnection(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort());
                                         processRound(matches[i].getPlayer1().getpClientIP(), matches[i].getPlayer1().getpClientPort(),
@@ -350,7 +350,7 @@ public class SSPServer extends Server {
                                     }
                                     if (matches[i].getChoice2() == null) {
                                         if(isConnectedTo(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort())){
-                                            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Feiging");
+                                            send(matches[i].getPlayer2().getpClientIP(),matches[i].getPlayer2().getpClientPort(),"status$rausgeworfen$Du hast keine Auswahl gesendet ! Du Flitzpiepe");
                                         }
                                         closeConnection(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort());
                                         processRound(matches[i].getPlayer2().getpClientIP(), matches[i].getPlayer2().getpClientPort(),
@@ -438,6 +438,7 @@ public class SSPServer extends Server {
             @Override
             public void run() {
                 System.out.println(time);
+                sendToAll("zeit$"+(time));
                 time--;
                 if(time==0){
                     startRound();
@@ -445,7 +446,7 @@ public class SSPServer extends Server {
                     playerList.toFirst();
                     while (playerList.hasAccess()){
                         if(!playerList.getContent().isInGame()){
-                            send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen$Du hast vergessen, dich höflich zu verabschieden!");
+                            send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen$Du Tunichtgut, man muss sich höflich verabschieden !");
                             playerList.remove();
                         }else {
                             playerList.next();
@@ -661,7 +662,7 @@ public class SSPServer extends Server {
                 }
 
             }else{
-                send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen$Du hast deinen Namen nicht gesagt! Dummkopf!");
+                send(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort(),"status$rausgeworfen$Du hast deinen Namen nicht gesagt! Herr/Frau Hanswurst!");
                 closeConnection(playerList.getContent().getpClientIP(),playerList.getContent().getpClientPort());
                 System.out.println("Spieler mit IP "+playerList.getContent().getpClientIP()+" und Port "+playerList.getContent().getpClientPort()+" wurde rausgeworfen! Er/Sie/Es war unfähig, den eigenen Namen zu nennen");
                 playerList.remove();
